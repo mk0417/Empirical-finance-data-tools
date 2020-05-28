@@ -24,9 +24,9 @@ class wrds_to_parquet():
         df.columns = df.columns.str.lower()
         return df
 
-    def data_summary(self, data):
-        begdate = data['date'].min()
-        enddate = data['date'].max()
+    def data_summary(self, data, datevar):
+        begdate = data[datevar].min()
+        enddate = data[datevar].max()
         obs = len(data)
         print('--------------------')
         print('Date range: {0} -- {1}'.format(begdate, enddate))
@@ -41,13 +41,13 @@ class wrds_to_parquet():
             df[i] = pd.to_numeric(df[i], errors='coerce')
 
         df.to_parquet(self.outfile)
-        self.data_summary(df)
+        self.data_summary(df, 'date')
 
     # --------  Compustat North America fundamentals  --------
     def compf(self):
         df = self.read_data()
         df.to_parquet(self.outfile)
-        self.data_summary(df)
+        self.data_summary(df, 'datadate')
 
 
 wrds_to_parquet('msf_1925_2019', 'msf').crsp()
