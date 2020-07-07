@@ -38,8 +38,7 @@ class ap_pre_ret:
 
     def pre_ret(self, j, skip=True):
         '''
-        j: list
-            formation periods: past j month
+        j: formation periods: past j month
         skip: bool, default True
             True to skip most recent month
             False to include most recent month
