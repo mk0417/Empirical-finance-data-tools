@@ -16,10 +16,9 @@ import numpy as np
 
 class ap_pre_ret:
     def __init__(self, fpath):
-        self.fpath = fpath
         vars_list = ['permno', 'date', 'ret',
             'prc', 'shrout', 'exchcd', 'shrcd']
-        df = pd.read_parquet(self.fpath+'msf.parquet.gzip', columns=vars_list)
+        df = pd.read_parquet(fpath+'msf.parquet.gzip', columns=vars_list)
         df = df.query('-2<=exchcd<=3 & shrcd==[10, 11]').copy()
         df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
         df['date'] = df['date'] + pd.offsets.MonthEnd(0)

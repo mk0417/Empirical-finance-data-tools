@@ -121,6 +121,7 @@ class ap_ivol:
         print('number of regressions: %s' %len(df))
         return df
 
+
 db = ap_ivol('/Users/ml/Data/wrds/parquet/')
 
 ivol_ff3 = db.ivolatility('ff3', 'ivol_ff3', 5)

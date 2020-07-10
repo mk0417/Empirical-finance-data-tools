@@ -8,13 +8,16 @@
 # The adjustment is based on Gao and Ritter (2010)
 # ----------------------------------------------------------------------
 
+import pandas as pd
+import numpy as np
+
+
 class ap_share_turnover:
     def __init__(self, fpath):
-        self.fpath = fpath
         vars_list = ['permno', 'date', 'exchcd', 'shrcd', 'shrout', 'vol']
-        _df1 = pd.read_parquet(self.fpath+'dsf1.parquet.gzip',
+        _df1 = pd.read_parquet(fpath+'dsf1.parquet.gzip',
             columns=vars_list)
-        _df2 = pd.read_parquet(self.fpath+'dsf2.parquet.gzip',
+        _df2 = pd.read_parquet(fpath+'dsf2.parquet.gzip',
             columns=vars_list)
         df = pd.concat([_df1, _df2], ignore_index=True)
         df = df.query('-2<=exchcd<=3 & shrcd==[10, 11]').copy()
