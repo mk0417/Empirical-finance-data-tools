@@ -46,13 +46,13 @@ class ap_share_turnover:
                 & (df['exchcd']==3))
             df.loc[mask2, 'to_d'] = (df['vol']/1.8) / df['shrout']
             mask3 =  ((df['date']>='2002-01-01') & (df['date']<='2003-12-31')
-                & (df['exchcd']==3)) 
+                & (df['exchcd']==3))
             df.loc[mask3, 'to_d'] = (df['vol']/1.6) / df['shrout']
 
         _sum = (df.groupby(['permno', 'yyyymm'])
             ['to_d'].sum(min_count=1).to_frame('to_m').reset_index())
         _count = (df.groupby(['permno', 'yyyymm'])
-            ['date'].count().to_frame('n').reset_index())
+            ['to_d'].count().to_frame('n').reset_index())
         df = _sum.merge(_count, how='inner', on=['permno', 'yyyymm'])
         df['date'] = pd.to_datetime(df['yyyymm'], format='%Y%m')
         df['date'] = df['date'] + pd.offsets.MonthEnd(0)
