@@ -55,14 +55,14 @@ class ap_ivol:
         return grouped
 
     def ivolatility(self, model, outvar, ncpu):
-        '''
+        """
         model: string
             'market', 'ff3', 'ff5'
         outvar: string
             name for calculated variable
         ncpu: int
             number of cpu
-        '''
+        """
         start_time = datetime.datetime.now()
         df = self.df.copy()
         if model == 'market':

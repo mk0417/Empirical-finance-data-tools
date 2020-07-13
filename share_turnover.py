@@ -28,12 +28,12 @@ class ap_share_turnover:
         self.df = df.copy()
        
     def turnover(self, j, min_n, var_name, adjustment=False):
-        '''
+        """
         j: past j-month
         min_n: minimum number of days required to calculate turnover
         var_name: name of variable
         adjustment: NASDAQ volumes adjustment, default False
-        '''
+        """
         df = self.df.copy()
         df['date'] = pd.to_datetime(df['date'], format='%Y%m%d')
         df['yyyymm'] = df['date'].dt.year * 100 + df['date'].dt.month
@@ -75,7 +75,7 @@ class ap_share_turnover:
         return df
 
     def turnover_out(self, j, min_n, var_name, adjustment):
-        '''
+        """
         j: list
             past j-month
         min_n: list
@@ -84,7 +84,7 @@ class ap_share_turnover:
             name of variable
         adjustment: list
             NASDAQ volumes adjustment
-        '''
+        """
         df = pd.DataFrame(columns=['permno', 'yyyymm'])
         for k, l, m, n in zip(j, min_n, var_name, adjustment):
             _tmp = self.turnover(k, l, m, n)

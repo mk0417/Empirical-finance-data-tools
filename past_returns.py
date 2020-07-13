@@ -36,12 +36,12 @@ class ap_pre_ret:
         self.df = df.copy()
 
     def pre_ret(self, j, skip=True):
-        '''
+        """
         j: formation periods: past j month
         skip: bool, default True
             True to skip most recent month
             False to include most recent month
-        '''
+        """
         df = self.df.copy()
         df['logret'] = np.log(1+df['ret'])
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
@@ -70,13 +70,13 @@ class ap_pre_ret:
         return df
 
     def pre_ret_out(self, j, skip):
-        '''
+        """
         j: list
             formation periods: past j month
         skip: list
             True to skip most recent month
             False to include most recent month
-        '''
+        """
         df = pd.DataFrame(columns=['permno', 'yyyymm'])
         for m, n in zip(j, skip):
             _tmp = self.pre_ret(m, n)

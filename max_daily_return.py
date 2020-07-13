@@ -33,10 +33,10 @@ class ap_max_ret:
         return df
 
     def max_ret_out(self, n):
-        '''
+        """
         n: list
             highest n days
-        '''
+        """
         df = pd.DataFrame(columns=['permno', 'yyyymm'])
         for i in n:
             _tmp = self.max_ret(i)

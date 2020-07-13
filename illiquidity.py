@@ -71,7 +71,7 @@ class ap_illiquidity:
         return df
 
     def illiquidity_out(self, j, min_n, var_name, adjustment):
-        '''
+        """
         j: list
             past j-month
         min_n: list
@@ -80,7 +80,7 @@ class ap_illiquidity:
             name of variable
         adjustment: list
             NASDAQ volumes adjustment
-        '''
+        """
         df = pd.DataFrame(columns=['permno', 'yyyymm'])
         for k, l, m, n in zip(j, min_n, var_name, adjustment):
             _tmp = self.illiquidity(k, l, m, n)
