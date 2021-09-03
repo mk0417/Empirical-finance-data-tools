@@ -6,8 +6,18 @@
 # available: CAPM and Fama-French 3-factor. Regression is
 # estimated in each month and at least 15 days are required.
 # If use the entire CRSP daily data, there will be more than 3.5
-# millions regressions from. To speed up the estimation,
-# multiprocessing is applied.
+# millions regressions from 1926 to 2020. To speed up the
+# estimation, multiprocessing is applied.
+#
+# Ang, Hodrick, Xing and Zhang (2006)
+# "To examine trading strategies based on idiosyncratic volatility,
+# we describe portfolio formation strategies based on an estimation
+# period of L months, a waiting period of M months, and a holding
+# period of N months. We describe an L/M/N strategy as follows.
+# At month t, we compute idiosyncratic volatilities from the
+# regression (8) on daily data over an L-month period from month
+# t−L−M to month t−M."
+# "We use a 1/0/1 strategy in both cases."
 # ----------------------------------------------------------------
 
 import wrds
