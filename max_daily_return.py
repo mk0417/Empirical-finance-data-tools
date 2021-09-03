@@ -77,8 +77,8 @@ class ap_maxret:
 
 if __name__ == '__main__':
     db = ap_maxret()
-    mdr = pd.DataFrame(columns=['permno', 'yyyymm'])
-    for i in range(1, 6):
+    mdr = db.maxret(1)
+    for i in range(2, 6):
         _tmp = db.maxret(i)
         mdr = mdr.merge(_tmp, how='left', on=['permno', 'yyyymm'])
 
