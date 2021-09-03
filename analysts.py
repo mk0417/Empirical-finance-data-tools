@@ -9,8 +9,10 @@
 # and at least 2 analysts.
 #
 # 0.39% of obs are zero mean forecasts
-# 27.93% of obs made forecasts less than 30 days before forecast
-# period end date
+# 21.83% of obs made forecasts less than 30 days before forecast
+# period end date (some are after forecast period end date)
+#
+# Available from 197601
 #
 # Hou, Xue and Zhang (2020)
 #
@@ -74,11 +76,10 @@ class ap_analysts:
         # Keep if the forecasts are made 30 days before the forecast period end
         ibes['date_gap'] = ibes['fpedats'] - ibes['statpers']
         obs_less30days = len(ibes[ibes['date_gap']<=timedelta(days=30)])
+        print(f'Percent (forecast made less than 30 days): {obs_less30days/obs: 3.2%}')
         ibes = ibes[ibes['date_gap']>timedelta(days=30)].copy()
         ibes = ibes[['permno', 'yyyymm', 'numest', 'stdev', 'meanest']].copy()
-        obs = len(ibes)
-        print(f'Obs (with valid forecasts): {obs}')
-        print(f'Percent (forecast made less than 30 days): {obs_less30days/obs: 3.2%}')
+        print(f'Obs (with valid forecasts): {len(ibes)}')
         self.ibes = ibes.copy()
 
         end_time = time.time()
@@ -93,6 +94,7 @@ class ap_analysts:
         df.loc[df['numest']<2, 'disp'] = np.nan
         df = df.rename(columns={'numest': 'cov'})
         df = df.drop(columns=['stdev', 'meanest'])
+        df['cov'] = df['cov'].astype(int)
         df = df[['permno', 'yyyymm', 'cov', 'disp']]
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
         return df
