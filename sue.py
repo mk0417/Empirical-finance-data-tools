@@ -154,7 +154,7 @@ class ap_sue:
         df = df.sort_values(['gvkey', 'date', 'datadate'], ignore_index=True)
         df = df.drop_duplicates(['gvkey', 'date'], keep='last').copy()
         df['yyyymm'] = df['date'].dt.year*100 + df['date'].dt.month
-        # Get GVKEY to SUE data with date range condition
+        # Get PERMNO to SUE data with date range condition
         # TODO: use CRSP-Compustat Merged data if available
         df = df.merge(self.permno_gvkey, how='left', on='gvkey')
         df = df.query('namedt<=datadate<=nameendt').copy()
@@ -164,7 +164,6 @@ class ap_sue:
         df['permno'] = df['permno'].astype('int')
         # Obs are too small before 196409
         df = df.query('sue==sue & yyyymm>=196409').copy()
-        df = df.query('sue==sue').copy()
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
 
         end_time = time.time()
