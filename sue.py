@@ -187,11 +187,10 @@ class ap_sue:
 if __name__ == '__main__':
     db = ap_sue()
     sue = db.sue_est('eps', 'sue')
-    sur = db.sue_est('rps', 'sur')
-    sue = sue.merge(sur, how='outer', on=['permno', 'yyyymm'])
     sue = sue.sort_values(['permno', 'yyyymm'], ignore_index=True)
-    obs = len(sue)
+    sur = db.sue_est('rps', 'sur')
+    sur = sur.sort_values(['permno', 'yyyymm'], ignore_index=True)
     data_dir = '/Volumes/Seagate/asset_pricing_data'
     sue.to_csv(os.path.join(data_dir, 'sue.txt'), sep='\t', index=False)
+    sur.to_csv(os.path.join(data_dir, 'sur.txt'), sep='\t', index=False)
     print('Done: data is generated')
-    print(f'Obs: {obs}')
