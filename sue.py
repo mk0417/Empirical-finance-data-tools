@@ -5,13 +5,22 @@
 # deviation of the changes over past 8 quarters (require at least 6
 # quarters). Earnings change is the difference between current
 # earnings and earnings 4 quarters before.
-#
+# Earning is split adjusted: eps = epspxq / ajexq
+
+# sur: it is the ratio of revenue per share change scaled by the
+# standard deviation of the changes over past 8 quarters (require at
+# least 6 quarters). Revenue per share change is the difference
+# between current revenue per share and revenue per share 4 quarters
+# before. Here uses saleq instead of revtq since saleq has nearly
+# 100,000 more observations than revtq
+# Revenue per share is split adjusted: rps = saleq / (cshprq*ajexq)
+
 # Hou, Xue and Zhang (2020)
 # Chen and Zimmermann (2021)
 #
-# Only 137 firms have epspxq in fiscal year 1961
+# Number of firms that have epspxq and saleq is small before fiscal
+# year 1962
 # Start from fiscal year 1962 when retrieving data from Compustat
-# Earnings are split adjusted: eps = epspxq / ajexq
 #
 # To get PERMNO for each GVKEY, NCUSIP-CUSIP map is applied
 # It will get more matched pairs if CCM access is available
@@ -60,10 +69,10 @@ class ap_sue:
         conn = wrds.Connection(wrds_username=cfg['wrds']['username'])
 
         # Extract CRSP daily data
-        # Only 137 firms have epspxq in fiscal year 1961
         # Start from fiscal year 1962
         fundq = conn.raw_sql("""
-            select gvkey, datadate, fyearq, fqtr, rdq, epspxq, ajexq
+            select gvkey, datadate, fyearq, fqtr, rdq,
+                epspxq, saleq, cshprq, ajexq
             from comp.fundq
             where consol='C' and popsrc='D' and datafmt='STD'
                 and curcdq='USD' and indfmt='INDL' and fyearq>=1962
@@ -77,14 +86,17 @@ class ap_sue:
         # split-adjusted EPS
         fundq.loc[fundq['ajexq']<=0, 'ajexq'] = np.nan
         fundq['eps'] = fundq['epspxq'] / fundq['ajexq']
+        fundq['rps'] = fundq['saleq'] / (fundq['cshprq']*fundq['ajexq'])
         fundq['gap'] = fundq['rdq'] - fundq['datadate']
         obs0 = len(fundq[fundq['gap']<timedelta(days=0)])
         obs90 = len(fundq[fundq['gap']>timedelta(days=90)])
-        # Set EPS to missing if report date is before datadate
+        # Set to missing if report date is before datadate
         fundq.loc[fundq['gap']<timedelta(days=0), 'eps'] = np.nan
+        fundq.loc[fundq['gap']<timedelta(days=0), 'rps'] = np.nan
         # Assume information is available with 90 days (3 months) lag
-        # Set EPS to missing if report date is outside 90 days lag
+        # Set to missing if report date is outside 90 days lag
         fundq.loc[fundq['gap']>timedelta(days=90), 'eps'] = np.nan
+        fundq.loc[fundq['gap']>timedelta(days=90), 'rps'] = np.nan
         fundq['date'] = fundq['datadate'] + pd.offsets.MonthEnd(0)
         fundq['date'] = fundq['date'] + pd.offsets.MonthEnd(3)
         # Generate quarter index to control quarter gaps later
@@ -94,7 +106,7 @@ class ap_sue:
         qidx['qidx'] = qidx.index + 1
 
         fundq = fundq.merge(qidx, how='left', on=['fyearq', 'fqtr'])
-        fundq = fundq[['gvkey', 'date', 'eps', 'qidx', 'datadate']]
+        fundq = fundq[['gvkey', 'date', 'eps', 'rps', 'qidx', 'datadate']]
         fundq = fundq.sort_values(['gvkey', 'datadate'], ignore_index=True)
         self.fundq = fundq.copy()
 
@@ -119,30 +131,30 @@ class ap_sue:
         print(f'Percent (rdq>datadate+90): {obs90/len(fundq): 3.2%}')
         print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
 
-    def sue_est(self):
+    def sue_est(self, var, name):
         start_time = time.time()
         df = self.fundq.copy()
 
         df = df.sort_values(['gvkey', 'qidx'], ignore_index=True)
-        df['l4eps'] = df.groupby(['gvkey'])['eps'].shift(4)
+        df['l4'+var] = df.groupby(['gvkey'])[var].shift(4)
         df['l4qidx'] = df.groupby(['gvkey'])['qidx'].shift(4)
         df['qgap'] = df['qidx'] - df['l4qidx']
-        # 4 quarters lag EPS is set to missing if the quarter gap is not 4
-        df.loc[df['qgap']!=4, 'l4eps'] = np.nan
-        df['eps_diff'] = df['eps'] - df['l4eps']
+        # 4 quarters lag info is set to missing if the quarter gap is not 4
+        df.loc[df['qgap']!=4, 'l4'+var] = np.nan
+        df[var+'_diff'] = df[var] - df['l4'+var]
         df = df.sort_values(['gvkey', 'qidx'], ignore_index=True)
         # Use difference in past 8 quarters and require at least 6 quarters
-        df['eps_diff_std'] = (df.groupby('gvkey')['eps_diff']
+        df[var+'_diff_std'] = (df.groupby('gvkey')[var+'_diff']
             .rolling(window=8, min_periods=6).std().reset_index(drop=True))
         df['l7qidx'] = df.groupby(['gvkey'])['qidx'].shift(7)
         df['qgap'] = df['qidx'] - df['l7qidx']
-        df.loc[df['eps_diff_std']<=0, 'eps_diff_std'] = np.nan
+        df.loc[df[var+'_diff_std']<=0, var+'_diff_std'] = np.nan
         # Set to missing if outside past 8 quarters
-        df.loc[df['qgap']!=7, 'eps_diff_std'] = np.nan
-        df['sue'] = df['eps_diff'] / df['eps_diff_std']
-        df = df[['gvkey', 'date', 'datadate', 'sue']].copy()
+        df.loc[df['qgap']!=7, var+'_diff_std'] = np.nan
+        df[name] = df[var+'_diff'] / df[var+'_diff_std']
+        df = df[['gvkey', 'date', 'datadate', name]].copy()
 
-        # Expand data to distibute SUE to monthly frequence
+        # Expand data to distibute surprise to monthly frequence
         df = pd.concat([df]*3, ignore_index=True)
         df['month_gap'] = (df.groupby(['gvkey', 'date'])
             ['date'].cumcount())
@@ -158,24 +170,28 @@ class ap_sue:
         # TODO: use CRSP-Compustat Merged data if available
         df = df.merge(self.permno_gvkey, how='left', on='gvkey')
         df = df.query('namedt<=datadate<=nameendt').copy()
-        df = df[['permno', 'yyyymm', 'sue', 'gvkey', 'datadate']]
+        df = df[['permno', 'yyyymm', name, 'gvkey', 'datadate']]
         df = df.sort_values(['permno', 'yyyymm', 'datadate'], ignore_index=True)
         df = df.drop_duplicates(['permno', 'yyyymm'], keep='last').copy()
         df['permno'] = df['permno'].astype('int')
         # Obs are too small before 196409
-        df = df.query('sue==sue & yyyymm>=196409').copy()
+        df = df[(df[name].notna()) & (df['yyyymm']>=196409)].copy()
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
 
         end_time = time.time()
-        print('--------- SUE estimation ---------')
+        print(f'--------- {name.upper()} estimation ---------')
         print(f'Obs: {len(df)}')
         print(f'time_used: {(end_time-start_time)/60: 3.1f} mins')
         return df
 
 if __name__ == '__main__':
     db = ap_sue()
-    sue = db.sue_est()
+    sue = db.sue_est('eps', 'sue')
+    sur = db.sue_est('rps', 'sur')
+    sue = sue.merge(sur, how='outer', on=['permno', 'yyyymm'])
     sue = sue.sort_values(['permno', 'yyyymm'], ignore_index=True)
+    obs = len(sue)
     data_dir = '/Volumes/Seagate/asset_pricing_data'
     sue.to_csv(os.path.join(data_dir, 'sue.txt'), sep='\t', index=False)
     print('Done: data is generated')
+    print(f'Obs: {obs}')

@@ -104,12 +104,14 @@ if __name__ == '__main__':
     preret = db.preret_est(3)
     for i in [6, 9, 12]:
         tmp = db.preret_est(i)
-        preret = preret.merge(tmp, how='left', on=['permno', 'yyyymm'])
+        preret = preret.merge(tmp, how='outer', on=['permno', 'yyyymm'])
 
     tmp = db.pre12_7ret_est()
-    preret = preret.merge(tmp, how='left', on=['permno', 'yyyymm'])
+    preret = preret.merge(tmp, how='outer', on=['permno', 'yyyymm'])
     preret = preret.sort_values(['permno', 'yyyymm'], ignore_index=True)
+    obs = len(preret)
     data_dir = '/Volumes/Seagate/asset_pricing_data'
     preret.to_csv(os.path.join(data_dir, 'preret.txt'), sep='\t', index=False)
     print('Done: data is generated')
+    print(f'Obs: {obs}')
 
