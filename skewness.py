@@ -1,5 +1,9 @@
 # ------------------------------------------------------------------
-#                           Coskewness
+#                           Skewness
+#
+# Idiosyncratic skewness is the skewness of residuals from regression
+# of stock excess return on market excess return in each month
+# (require at least 15 days)
 #
 # Coskewness is estimated as the formula below
 # cs = E[e_i,(e_m)^2] / (sqrt(E[(e_i)^2])*E[(e_m)^2])
@@ -17,7 +21,7 @@ import numpy as np
 import time
 import os
 
-class ap_coskew:
+class ap_skew:
     def __init__(self):
         start_time = time.time()
         pass_dir = '~/.pass'
@@ -64,11 +68,12 @@ class ap_coskew:
         res = ((x-np.mean(x)) @ (y-np.mean(y))) / (len(x) - 1)
         return res
 
-    def coskew_est(self):
+    def skew_est(self):
         start_time = time.time()
         df = self.dsf.merge(self.mktrf, how='inner', on='date')
 
         df['retx'] = df['ret'] - df['rf']
+        del df['ret']
         df['yyyymm'] = df['date'].dt.year * 100 + df['date'].dt.month
         df = df.dropna()
         df['n_day'] = (df.groupby(['permno', 'yyyymm'])
@@ -89,8 +94,13 @@ class ap_coskew:
         b['a'] = b['y_bar'] - (b['b']*b['x_bar'])
         b = b[['permno','yyyymm', 'a', 'b']].copy()
 
+        # Residual
         df = df.merge(b, how='inner', on=['permno', 'yyyymm'])
         df['e'] = df['retx'] - (df['a'] + df['b']*df['mktrf'])
+        # Idiosyncratic skewness
+        iskew = (df.groupby(['permno', 'yyyymm'])['e']
+            .skew().to_frame('iskew').reset_index())
+        # Coskewness
         df['mktrf_dm'] = (df.groupby(['permno', 'yyyymm'])['mktrf']
             .transform(lambda x: x-x.mean()))
         df['e_mktrf_dm2'] = df['e'] * (df['mktrf_dm']**2)
@@ -103,19 +113,20 @@ class ap_coskew:
             ['mktrf_dm2'].mean().to_frame())
         df = e_mktrf_dm2.join(e2, how='inner').join(mktrf_dm2, how='inner')
         df = df.reset_index()
-        df['df'] = df['e_mktrf_dm2'] / (np.sqrt(df['e2'])*df['mktrf_dm2'])
-        df = df[['permno', 'yyyymm', 'df']].copy()
+        df['coskew'] = df['e_mktrf_dm2'] / (np.sqrt(df['e2'])*df['mktrf_dm2'])
+        df = df[['permno', 'yyyymm', 'coskew']].copy()
+        df = df.merge(iskew, how='outer', on=['permno', 'yyyymm'])
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
 
         end_time = time.time()
-        print(f'--------- Coskewness ---------')
+        print(f'--------- Skewness ---------')
         print(f'Obs: {len(df)}')
         print(f'Time used: {(end_time-start_time)/60: 3.1f} mins')
         return df
 
 if __name__ == '__main__':
-    db = ap_coskew()
-    cs = db.coskew_est()
+    db = ap_skew()
+    sk = db.skew_est()
     data_dir = '/Volumes/Seagate/asset_pricing_data'
-    cs.to_csv(os.path.join(data_dir, 'coskewness.txt'), sep='\t', index=False)
+    sk.to_csv(os.path.join(data_dir, 'skewness.txt'), sep='\t', index=False)
     print('Done: data is generated')
