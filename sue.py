@@ -26,15 +26,16 @@
 # It will get more matched pairs if CCM access is available
 #
 # Example
-#  gvkey    datadate    fyearq   fqtr
-# 123456   2010-03-31    2010     1
+#  gvkey    datadate    fyearq   fqtr   sue
+# 123456   2010-03-31    2010     1     1.2
 # Distribute earnings info to monthly data
-#  gvkey    datadate    fyearq   fqtr  yyyymm
-# 123456   2010-03-31    2010     1    201006
-# 123456   2010-03-31    2010     1    201007
-# 123456   2010-03-31    2010     1    201008
-# From Jun to Aug in 2010, earnings for fiscal quarter 2010Q1
-# will be used (assume earnings are available with 3-month lag)
+#  gvkey    datadate    fyearq   fqtr  yyyymm    sue
+# 123456   2010-03-31    2010     1    201006    1.2
+# 123456   2010-03-31    2010     1    201007    1.2
+# 123456   2010-03-31    2010     1    201008    1.2
+# For returns from Jul to Sep in 2010, earnings in fiscal quarter
+# 2010Q1 will be used (assume earnings are available with 3-month
+# lag)
 #
 # Further control to avoid data errors and forward-looking bias
 # RDQ is the first public report date for earnings information
@@ -129,7 +130,7 @@ class ap_sue:
         print('\n--------- Extract data from WRDS ---------')
         print(f'Percent (rdq<datadate): {obs0/len(fundq): 3.2%}')
         print(f'Percent (rdq>datadate+90): {obs90/len(fundq): 3.2%}')
-        print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds\n')
 
     def sue_est(self, var, name):
         start_time = time.time()
@@ -181,7 +182,7 @@ class ap_sue:
         end_time = time.time()
         print(f'--------- {name.upper()} estimation ---------')
         print(f'Obs: {len(df)}')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins')
         return df
 
 if __name__ == '__main__':
