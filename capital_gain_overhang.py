@@ -80,6 +80,7 @@ class ap_cgo:
         df['cgo'] = (df['l1prc']-df['r']) / df['l1prc']
         df['yyyymm'] = df['date'].dt.year * 100 + df['date'].dt.month
         df = df.groupby(['permno', 'yyyymm'])['cgo'].mean().reset_index()
+        df = df.query('cgo==cgo').copy()
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
 
         end_time = time.time()

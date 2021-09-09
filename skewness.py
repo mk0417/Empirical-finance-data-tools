@@ -100,6 +100,7 @@ class ap_skew:
         # Idiosyncratic skewness
         iskew = (df.groupby(['permno', 'yyyymm'])['e']
             .skew().to_frame('iskew').reset_index())
+        iskew = iskew.query('iskew==iskew').copy()
         # Coskewness
         df['mktrf_dm'] = (df.groupby(['permno', 'yyyymm'])['mktrf']
             .transform(lambda x: x-x.mean()))
@@ -114,7 +115,7 @@ class ap_skew:
         df = e_mktrf_dm2.join(e2, how='inner').join(mktrf_dm2, how='inner')
         df = df.reset_index()
         df['coskew'] = df['e_mktrf_dm2'] / (np.sqrt(df['e2'])*df['mktrf_dm2'])
-        df = df[['permno', 'yyyymm', 'coskew']].copy()
+        df = df.query('coskew==coskew')[['permno', 'yyyymm', 'coskew']].copy()
         df = df.merge(iskew, how='outer', on=['permno', 'yyyymm'])
         df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
 
