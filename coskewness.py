@@ -1,46 +1,80 @@
-# --------------------------------
-# Conditional skewness
-# --------------------------------
+# ------------------------------------------------------------------
+#                           Coskewness
+#
+# Coskewness is estimated as the formula below
+# cs = E[e_i,(e_m)^2] / (sqrt(E[(e_i)^2])*E[(e_m)^2])
+# e_i is the residual from regression of stock excess return on market
+# excess return. e_m is the demeaned market excess return. This is
+# estimated in each month (require at least 15 days)
+#
+# Hou, Xue and Zhang (2020)
+# ------------------------------------------------------------------
 
+import wrds
+import configparser as cp
 import pandas as pd
 import numpy as np
-import datetime
-
+import time
+import os
 
 class ap_coskew:
-    def __init__(self, fpath):
-        vars_list = ['permno', 'date', 'ret', 'exchcd', 'shrcd']
-        _df1 = pd.read_parquet(fpath+'dsf1.parquet.gzip', columns=vars_list)
-        _df2 = pd.read_parquet(fpath+'dsf2.parquet.gzip', columns=vars_list)
-        df = pd.concat([_df1, _df2], ignore_index=True)
-        df = df.query('-2<=exchcd<=3 & shrcd==[10, 11]').copy()
-        df = df.drop_duplicates(['permno', 'date'], keep='last')
-        df.loc[df['ret']<=-1, 'ret'] = np.nan
-        df = df.sort_values(['permno', 'date'], ignore_index=True)
-        ff = pd.read_csv('/Users/ml/Data/ff/ff3_daily.csv')
-        for i in ff.columns[1:]:
-            ff[i] = ff[i] / 100
+    def __init__(self):
+        start_time = time.time()
+        pass_dir = '~/.pass'
+        cfg = cp.ConfigParser()
+        cfg.read(os.path.join(os.path.expanduser(pass_dir), 'credentials.cfg'))
+        conn = wrds.Connection(wrds_username=cfg['wrds']['username'])
 
-        self.df = df.copy()
-        self.ff = ff.copy()
+        # Extract CRSP daily data
+        dsf = conn.raw_sql("""
+            select a.permno, a.date, a.ret
+            from crsp.dsf a left join crsp.msenames b
+                on a.permno=b.permno and a.date>=b.namedt and a.date<=b.nameendt
+            where b.exchcd between -2 and 3 and b.shrcd between 10 and 11
+        """, date_cols=['date'])
 
+        # Extract factor data
+        # Data is available from 1926-07-01
+        mktrf = conn.raw_sql("""
+            select date, mktrf, rf
+            from ff.factors_daily
+            order by date
+        """, date_cols=['date'])
+        end_time = time.time()
+        print('\n--------- Extract data from WRDS ---------')
+        print(f'Time used (SQL): {(end_time-start_time)/60: 3.1f} mins')
+
+        start_time = time.time()
+        dsf = dsf.drop_duplicates(['permno', 'date'], keep='last')
+        dsf.loc[dsf['ret']<=-1, 'ret'] = np.nan
+        dsf['permno'] = dsf['permno'].astype(int)
+        self.dsf = dsf.copy()
+        self.mktrf = mktrf.copy()
+
+        end_time = time.time()
+        print(f'Time used (clean): {(end_time-start_time)/60: 3.1f} seconds\n')
+
+    # Compute covariance of X and Y
+    # This will be used to estimate regression coefficients
+    # See the link below if you need to check the formula
+    # https://en.wikipedia.org/wiki/Simple_linear_regression
     def cov_m(self, data):
         x = data['mktrf'].to_numpy()
         y = data['retx'].to_numpy()
         res = ((x-np.mean(x)) @ (y-np.mean(y))) / (len(x) - 1)
         return res
 
-    def coskew(self):
-        start_time = datetime.datetime.now()
-        df = self.df[['permno', 'date', 'ret']].copy()
-        mktrf = self.ff[['date', 'mktrf', 'rf']].copy()
-        df = df.merge(mktrf, how='inner', on='date')
+    def coskew_est(self):
+        start_time = time.time()
+        df = self.dsf.merge(self.mktrf, how='inner', on='date')
+
         df['retx'] = df['ret'] - df['rf']
-        df['yyyymm'] = (df['date']/100).astype(int)
+        df['yyyymm'] = df['date'].dt.year * 100 + df['date'].dt.month
         df = df.dropna()
         df['n_day'] = (df.groupby(['permno', 'yyyymm'])
             ['retx'].transform('count'))
         df['std'] = df.groupby(['permno', 'yyyymm'])['retx'].transform('std')
+        # Require at least 15 days
         df = df.query('n_day>=15 & std>0').copy()
         covar = (df.groupby(['permno', 'yyyymm'])
             .apply(self.cov_m).to_frame('covar'))
@@ -54,6 +88,7 @@ class ap_coskew:
         b['b'] = b['covar'] / b['var']
         b['a'] = b['y_bar'] - (b['b']*b['x_bar'])
         b = b[['permno','yyyymm', 'a', 'b']].copy()
+
         df = df.merge(b, how='inner', on=['permno', 'yyyymm'])
         df['e'] = df['retx'] - (df['a'] + df['b']*df['mktrf'])
         df['mktrf_dm'] = (df.groupby(['permno', 'yyyymm'])['mktrf']
@@ -66,16 +101,21 @@ class ap_coskew:
         e2 = df.groupby(['permno', 'yyyymm'])['e2'].mean().to_frame()
         mktrf_dm2 = (df.groupby(['permno', 'yyyymm'])
             ['mktrf_dm2'].mean().to_frame())
-        cs = e_mktrf_dm2.join(e2, how='inner').join(mktrf_dm2, how='inner')
-        cs = cs.reset_index()
-        cs['cs'] = cs['e_mktrf_dm2'] / (np.sqrt(cs['e2'])*cs['mktrf_dm2'])
-        cs = cs[['permno', 'yyyymm', 'cs']].copy()
-        cs = cs.sort_values(['permno', 'yyyymm'], ignore_index=True)
-        end_time = datetime.datetime.now()
-        print('start time: %s' %start_time)
-        print('end time: %s' %end_time)
-        return cs
-    
-db = ap_coskew('/Users/ml/Data/wrds/parquet/')
+        df = e_mktrf_dm2.join(e2, how='inner').join(mktrf_dm2, how='inner')
+        df = df.reset_index()
+        df['df'] = df['e_mktrf_dm2'] / (np.sqrt(df['e2'])*df['mktrf_dm2'])
+        df = df[['permno', 'yyyymm', 'df']].copy()
+        df = df.sort_values(['permno', 'yyyymm'], ignore_index=True)
 
-cs = db.coskew()
+        end_time = time.time()
+        print(f'--------- Coskewness ---------')
+        print(f'Obs: {len(df)}')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins')
+        return df
+
+if __name__ == '__main__':
+    db = ap_coskew()
+    cs = db.coskew_est()
+    data_dir = '/Volumes/Seagate/asset_pricing_data'
+    cs.to_csv(os.path.join(data_dir, 'coskewness.txt'), sep='\t', index=False)
+    print('Done: data is generated')
