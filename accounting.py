@@ -81,7 +81,7 @@ class ap_accounting:
             df['l'+str(i)+'ce'] = df.groupby('gvkey')['ce'].shift(i)
 
         df['l3fyear'] = df.groupby('gvkey')['fyear'].shift(3)
-        df['fyear_gap'] = df['fyear'] = df['l3fyear']
+        df['fyear_gap'] = df['fyear'] - df['l3fyear']
         df['ce_avg3yr'] = (df['l1ce']+df['l2ce']+df['l3ce']) / 3
         df['aci'] = df['ce'] / df['ce_avg3yr'] - 1
         df.loc[df['fyear_gap']!=3, 'aci'] = np.nan
