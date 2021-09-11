@@ -83,7 +83,7 @@ class ap_analysts:
         self.ibes = ibes.copy()
 
         end_time = time.time()
-        print(f'time_used: {end_time-start_time: 3.1f} seconds')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds')
 
     def analysts_est(self):
         df = self.ibes.copy()

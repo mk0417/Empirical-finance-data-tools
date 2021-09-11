@@ -44,7 +44,7 @@ class ap_maxret:
 
         end_time = time.time()
         print('\n--------- Extract data from WRDS ---------')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins\n')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins\n')
 
         # Rank returns to find top 5 returns in a month
         start_time = time.time()
@@ -61,7 +61,7 @@ class ap_maxret:
 
         end_time = time.time()
         print(f'--------- Rank returns ---------')
-        print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds\n')
 
     def maxret(self, n):
         start_time = time.time()
@@ -72,7 +72,7 @@ class ap_maxret:
 
         end_time = time.time()
         print(f'--------- MDR{n} ---------')
-        print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds\n')
         return df
 
 if __name__ == '__main__':

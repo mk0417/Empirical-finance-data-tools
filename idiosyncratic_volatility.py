@@ -63,7 +63,7 @@ class ap_ivol:
 
         end_time = time.time()
         print('\n--------- Extract data from WRDS ---------')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins\n')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins\n')
 
     def ols_b(self, data, x_var, y_var):
         x = data[x_var].copy()
@@ -141,7 +141,7 @@ class ap_ivol:
 
         end_time = time.time()
         print(f'--------- IVOL estimation: {model} ---------')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins')
         print(f'number of stocks: {len(permno_list)}')
         print(f'number of regressions: {len(res_df)}\n')
         return res_df

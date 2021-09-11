@@ -46,7 +46,7 @@ class ap_preret:
 
         end_time = time.time()
         print('\n--------- Extract data from WRDS ---------')
-        print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds\n')
 
     def preret_est(self, j):
         start_time = time.time()
@@ -75,7 +75,7 @@ class ap_preret:
         print(f'--------- Past {j}-month return ---------')
         print(f'Obs: {obs}')
         print(f'Start month: {start_month}')
-        print(f'time_used: {end_time-start_time: 3.1f} seconds')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds')
         return df
 
     def pre12_7ret_est(self):
@@ -96,7 +96,7 @@ class ap_preret:
         end_time = time.time()
         print(f'Obs: {obs}')
         print(f'Start month: {start_month}')
-        print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds\n')
         return df
 
 if __name__ == '__main__':

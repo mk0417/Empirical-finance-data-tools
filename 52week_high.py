@@ -63,7 +63,7 @@ class ap_week52_high:
         end_time = time.time()
         print('\n--------- Extract data from WRDS ---------')
         print(f'Obs (non-positive price): {obs_nonpos}')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins\n')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins\n')
 
     def week52_high(self):
         start_time = time.time()
@@ -106,7 +106,7 @@ class ap_week52_high:
         print(f'Obs with all missing: {obs_with_missing}')
         print(f'Obs: {obs}')
         print(f'Start month: {start_month}')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins\n')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins\n')
         return df
 
 if __name__ == '__main__':

@@ -38,7 +38,7 @@ class ap_tvol:
 
         end_time = time.time()
         print('\n--------- Extract data from WRDS ---------')
-        print(f'time_used: {(end_time-start_time)/60: 3.1f} mins\n')
+        print(f'Time used: {(end_time-start_time)/60: 3.1f} mins\n')
 
     def tvol_est(self):
         start_time = time.time()
@@ -57,7 +57,7 @@ class ap_tvol:
         end_time = time.time()
         print(f'--------- Total volatility ---------\n')
         print(f"Percent (zero std): {len(df.query('tvol==0'))/len(df): 3.2%}")
-        print(f'time_used: {end_time-start_time: 3.1f} seconds\n')
+        print(f'Time used: {end_time-start_time: 3.1f} seconds\n')
         return df
 
 if __name__ == '__main__':
