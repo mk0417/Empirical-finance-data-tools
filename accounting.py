@@ -3,6 +3,24 @@
 #
 # Hou, Xue and Zhang (2020)
 # See appendix
+# Abnormal corporate investment (aci)
+# Asset growth (ag)
+# Changes in PPE and inventory to assets (dpia)
+# Net operating assets (noa)
+# Changes in net operating assets (dnoa)
+# Changes in long-term net operating assets (dlno)
+# Investment growth (ig)
+# 2-year investment growth (ig2)
+# 3-year investment growth (ig3)
+# Net stock issues (nsi)
+# Composite debt issuance (cdi)
+# Inventory growth (ivg)
+# Inventory changes (ivc)
+# Operating accruals (oa)
+# Total accruals (ta)
+#
+# Chen and Zimmermann (2021)
+# Sustainable growth (cheq): Lockwood and Prombutr (2010)
 # ------------------------------------------------------------------
 
 import wrds
@@ -33,7 +51,7 @@ class ap_accounting:
             from comp.funda
             where consol='C' and popsrc ='D' and datafmt = 'STD'
                 and curcd = 'USD' and indfmt = 'INDL'
-        """, date_cols=['datadate'])
+        """, date_cols=['datadate'], chunksize=None)
 
         funda = funda.sort_values(['gvkey', 'fyear', 'datadate'],
             ignore_index=True)
@@ -61,7 +79,7 @@ class ap_accounting:
                 and b.excntry='USA' and a.ncusip is not null
                 and b.cusip is not null
             order by permno, gvkey, namedt
-        """, date_cols=['namedt', 'nameendt'])
+        """, date_cols=['namedt', 'nameendt'], chunksize=None)
 
         permno_gvkey['permno'] = permno_gvkey['permno'].astype(int)
         self.permno_gvkey = permno_gvkey.copy()
@@ -230,7 +248,7 @@ class ap_accounting:
             'dact', 'dche', 'dlct', 'ddlc', 'dtxp', 'l1fyear', 'l1at',
             'fyear_gap']).copy())
 
-        # Total accruals (oa)
+        # Total accruals (ta)
         df['coa'] = df['act'] - df['che']
         df['col'] = df['lct'] - df['dlc']
         df['wc'] = df['coa'] - df['col']
@@ -254,9 +272,17 @@ class ap_accounting:
         df['ta'] = df['ta'] / df['l1at']
         df.loc[df['fyear_gap']!=1, 'ta'] = np.nan
 
-        # clean
+        # Sustainable growth (cheq)
+        df = df.sort_values(['gvkey', 'fyear'], ignore_index=True)
+        df['l1ceq'] = df.groupby('gvkey')['ceq'].shift(1)
+        df['l1fyear'] = df.groupby('gvkey')['fyear'].shift(1)
+        df['fyear_gap'] = df['fyear'] - df['l1fyear']
+        df.loc[(df['ceq']>0) & (df['l1ceq']>0)
+            & (df['fyear_gap']==1), 'cheq'] = df['ceq'] / df['l1ceq'] - 1
+
+        # Clean
         var_list = ['aci', 'ag', 'dpia', 'noa', 'dnoa', 'dlno', 'ig', 'ig2',
-            'ig3', 'nsi', 'cdi', 'ivg', 'ivc', 'oa', 'ta']
+            'ig3', 'nsi', 'cdi', 'ivg', 'ivc', 'oa', 'ta', 'cheq']
         df = df[['gvkey', 'date', 'datadate', 'fyear']+var_list].copy()
         df = df.sort_values(['gvkey', 'fyear'], ignore_index=True)
 
